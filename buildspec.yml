@@ -10,32 +10,41 @@
 #       - echo "Running tests..."
 #       - export PYTHONPATH=$CODEBUILD_SRC_DIR
 #       - pytest single_service/tests
+
 version: 0.2
 
 phases:
+  install:
+    runtime-versions:
+      python: 3.9
+    commands:
+      - echo Installing dependencies...
+      - pip install -r single_service/requirements.txt
+
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - REGION=$(aws configure get region)
-      - REPO_NAME=single_service
+      - REGION=$AWS_DEFAULT_REGION
+      - REPOSITORY_NAME=single_service   # <-- change if your ECR repo has a different name
       - IMAGE_TAG=latest
       - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
 
   build:
     commands:
       - echo Running tests...
-      - pytest ./tests
+      - pytest single_service/tests
       - echo Building the Docker image...
-      - docker build -t $REPO_NAME:$IMAGE_TAG .
+      - docker build -t $REPOSITORY_NAME:latest ./single_service
+      - docker tag $REPOSITORY_NAME:latest $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPOSITORY_NAME:$IMAGE_TAG
 
   post_build:
     commands:
-      - echo Tagging image...
-      - docker tag $REPO_NAME:$IMAGE_TAG $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
-      - echo Pushing image to ECR...
-      - docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
+      - echo Pushing the Docker image to ECR...
+      - docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPOSITORY_NAME:$IMAGE_TAG
+      - echo Writing image definitions file...
+      - printf '[{"name":"%s","imageUri":"%s"}]' $REPOSITORY_NAME $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPOSITORY_NAME:$IMAGE_TAG > imagedefinitions.json
 
 artifacts:
-  files:
-    - '**/*'
+  files: imagedefinitions.json
+
