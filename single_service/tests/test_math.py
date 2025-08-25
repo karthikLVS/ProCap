@@ -1,4 +1,4 @@
-from app import add, subtract, multiply, divide
+from single_service.app import add, subtract, multiply, divide
 import pytest
 
 def test_add():
