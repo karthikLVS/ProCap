@@ -3,11 +3,10 @@ version: 0.2
 phases:
   install:
     commands:
-      - pip install -r single-service/requirements.txt
+      - echo "Installing dependencies..."
+      - pip install -r single_service/requirements.txt
+
   build:
     commands:
-      - pytest single-service/tests
-
-artifacts:
-  files:
-    - '**/*'
+      - echo "Running tests..."
+      - pytest single_service/tests
