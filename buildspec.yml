@@ -3,11 +3,10 @@ version: 0.2
 phases:
   install:
     commands:
-      - echo "Installing dependencies..."
       - pip install -r single_service/requirements.txt
 
   build:
     commands:
       - echo "Running tests..."
-      - export PYTHONPATH=$CODEBUILD_SRC_DIR/single_service
+      - export PYTHONPATH=$CODEBUILD_SRC_DIR
       - pytest single_service/tests
